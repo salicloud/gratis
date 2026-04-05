@@ -1,0 +1,205 @@
+syntax = "proto3";
+
+package agent.v1;
+
+option go_package = "github.com/salicloud/gratis/gen/agent/v1;agentv1";
+
+import "google/protobuf/timestamp.proto";
+
+// AgentService is the gRPC service exposed by the Gratis API.
+// Agents connect to it and maintain a persistent bidirectional stream.
+service AgentService {
+  // Connect establishes a persistent session between an agent and the API.
+  // The agent sends heartbeats and command results; the API sends commands.
+  rpc Connect(stream AgentMessage) returns (stream ServerMessage);
+}
+
+// ─── Agent → Server ──────────────────────────────────────────────────────────
+
+message AgentMessage {
+  oneof payload {
+    RegisterRequest  register        = 1;
+    Heartbeat        heartbeat       = 2;
+    CommandResult    command_result  = 3;
+    LogEntry         log             = 4;
+  }
+}
+
+message RegisterRequest {
+  string token    = 1; // server provisioning token
+  string hostname = 2;
+  string os       = 3; // e.g. "ubuntu 24.04"
+  string arch     = 4; // e.g. "amd64"
+  string version  = 5; // agent version
+}
+
+message Heartbeat {
+  google.protobuf.Timestamp timestamp = 1;
+  SystemMetrics             metrics   = 2;
+  repeated ServiceStatus    services  = 3;
+}
+
+message SystemMetrics {
+  double cpu_percent    = 1;
+  uint64 mem_total      = 2; // bytes
+  uint64 mem_used       = 3;
+  uint64 disk_total     = 4;
+  uint64 disk_used      = 5;
+  double load_1         = 6;
+  double load_5         = 7;
+  double load_15        = 8;
+}
+
+message ServiceStatus {
+  string name    = 1; // e.g. "nginx", "postfix", "mariadb"
+  bool   running = 2;
+}
+
+message CommandResult {
+  string command_id = 1;
+  bool   success    = 2;
+  string error      = 3; // populated on failure
+}
+
+message LogEntry {
+  string                    command_id = 1;
+  google.protobuf.Timestamp timestamp  = 2;
+  LogLevel                  level      = 3;
+  string                    message    = 4;
+}
+
+enum LogLevel {
+  LOG_LEVEL_UNSPECIFIED = 0;
+  LOG_LEVEL_DEBUG       = 1;
+  LOG_LEVEL_INFO        = 2;
+  LOG_LEVEL_WARN        = 3;
+  LOG_LEVEL_ERROR       = 4;
+}
+
+// ─── Server → Agent ──────────────────────────────────────────────────────────
+
+message ServerMessage {
+  oneof payload {
+    RegisterResponse register_response = 1;
+    Command          command           = 2;
+  }
+}
+
+message RegisterResponse {
+  bool   accepted  = 1;
+  string server_id = 2; // UUID assigned to this server
+  string message   = 3; // rejection reason if not accepted
+}
+
+message Command {
+  string command_id = 1; // UUID, used to correlate results
+
+  oneof payload {
+    CreateAccountCmd    create_account    = 10;
+    DeleteAccountCmd    delete_account    = 11;
+    CreateVhostCmd      create_vhost      = 20;
+    DeleteVhostCmd      delete_vhost      = 21;
+    CreateDatabaseCmd   create_database   = 30;
+    DeleteDatabaseCmd   delete_database   = 31;
+    CreateEmailCmd      create_email      = 40;
+    DeleteEmailCmd      delete_email      = 41;
+    CreateDNSZoneCmd    create_dns_zone   = 50;
+    DeleteDNSZoneCmd    delete_dns_zone   = 51;
+    UpsertDNSRecordCmd  upsert_dns_record = 52;
+    DeleteDNSRecordCmd  delete_dns_record = 53;
+    IssueCertCmd        issue_cert        = 60;
+    RestartServiceCmd   restart_service   = 70;
+  }
+}
+
+// System accounts — one Linux user per hosting account
+message CreateAccountCmd {
+  string username = 1;
+  uint32 uid      = 2;
+  string homedir  = 3;
+  uint64 disk_quota_bytes = 4;
+}
+
+message DeleteAccountCmd {
+  string username     = 1;
+  bool   purge_files  = 2;
+}
+
+// Vhosts — Nginx config per domain
+message CreateVhostCmd {
+  string username    = 1;
+  string domain      = 2;
+  string docroot     = 3;
+  string php_version = 4; // e.g. "8.3", empty = no PHP
+  bool   ssl         = 5;
+  repeated string aliases = 6;
+}
+
+message DeleteVhostCmd {
+  string domain = 1;
+}
+
+// Databases
+message CreateDatabaseCmd {
+  string db_name  = 1;
+  string db_user  = 2;
+  string password = 3; // pre-hashed or plaintext depending on backend
+}
+
+message DeleteDatabaseCmd {
+  string db_name = 1;
+  string db_user = 2;
+}
+
+// Email
+message CreateEmailCmd {
+  string address  = 1; // full address, e.g. user@example.com
+  string password = 2;
+  uint64 quota_bytes = 3;
+}
+
+message DeleteEmailCmd {
+  string address = 1;
+}
+
+// DNS
+message CreateDNSZoneCmd {
+  string zone = 1; // e.g. "example.com"
+  repeated DNSRecord records = 2;
+}
+
+message DeleteDNSZoneCmd {
+  string zone = 1;
+}
+
+message UpsertDNSRecordCmd {
+  string    zone   = 1;
+  DNSRecord record = 2;
+}
+
+message DeleteDNSRecordCmd {
+  string zone = 1;
+  string name = 2;
+  string type = 3;
+}
+
+message DNSRecord {
+  string name    = 1; // relative to zone, "@" for apex
+  string type    = 2; // A, AAAA, CNAME, MX, TXT, etc.
+  string content = 3;
+  uint32 ttl     = 4;
+  uint32 priority = 5; // MX, SRV
+}
+
+// SSL
+message IssueCertCmd {
+  string          domain            = 1;
+  repeated string sans              = 2; // additional SANs
+  string          webroot           = 3; // for HTTP-01 challenge
+  bool            dns_challenge     = 4; // use DNS-01 instead
+}
+
+// Service management
+message RestartServiceCmd {
+  string service = 1; // "nginx", "postfix", "dovecot", etc.
+}
