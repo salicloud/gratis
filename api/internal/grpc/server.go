@@ -15,6 +15,7 @@ import (
 	googlegrpc "google.golang.org/grpc"
 )
 
+
 const commandTimeout = 30 * time.Second
 
 // Server runs the gRPC server (for agents) and HTTP API (for the frontend).
@@ -30,10 +31,12 @@ type Server struct {
 }
 
 type connectedAgent struct {
-	serverID string
-	hostname string
-	stream   agentv1.AgentService_ConnectServer
-	send     chan *agentv1.ServerMessage
+	serverID    string
+	hostname    string
+	stream      agentv1.AgentService_ConnectServer
+	send        chan *agentv1.ServerMessage
+	lastMetrics *agentv1.SystemMetrics
+	lastSeen    time.Time
 }
 
 func NewServer(grpcAddr, httpAddr string) *Server {
@@ -175,6 +178,10 @@ func (s *Server) handleSession(stream agentv1.AgentService_ConnectServer, agent 
 func (s *Server) handleAgentMessage(agent *connectedAgent, msg *agentv1.AgentMessage) {
 	switch p := msg.Payload.(type) {
 	case *agentv1.AgentMessage_Heartbeat:
+		s.mu.Lock()
+		agent.lastMetrics = p.Heartbeat.Metrics
+		agent.lastSeen = time.Now()
+		s.mu.Unlock()
 		slog.Debug("heartbeat",
 			"server_id", agent.serverID,
 			"cpu", p.Heartbeat.Metrics.GetCpuPercent(),

@@ -3,7 +3,7 @@ PATH   := $(PATH):$(GOPATH)/bin
 PROTO_SRC := proto
 GEN_OUT   := gen
 
-.PHONY: proto agent api test lint clean
+.PHONY: proto agent api web test lint clean
 
 proto:
 	protoc \
@@ -20,6 +20,12 @@ agent:
 api:
 	go build -o bin/gratis-api ./api/cmd/api
 
+web:
+	cd web && npm run build
+
+web-dev:
+	cd web && npm run dev
+
 test:
 	go test ./...
 
@@ -27,4 +33,4 @@ lint:
 	golangci-lint run ./...
 
 clean:
-	rm -rf bin/ gen/
+	rm -rf bin/ gen/ web/.next/

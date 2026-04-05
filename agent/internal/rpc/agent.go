@@ -22,13 +22,14 @@ const (
 )
 
 type Agent struct {
-	apiAddr   string
-	token     string
-	lastCPU   system.CPUSample
+	apiAddr    string
+	token      string
+	dispatcher *Dispatcher
+	lastCPU    system.CPUSample
 }
 
-func NewAgent(apiAddr, token string) *Agent {
-	return &Agent{apiAddr: apiAddr, token: token}
+func NewAgent(apiAddr, token string, dispatcher *Dispatcher) *Agent {
+	return &Agent{apiAddr: apiAddr, token: token, dispatcher: dispatcher}
 }
 
 // Run connects to the API and maintains the session, reconnecting on failure.
@@ -151,7 +152,7 @@ func (a *Agent) session(ctx context.Context, stream agentv1.AgentService_Connect
 
 func (a *Agent) handleCommand(ctx context.Context, stream agentv1.AgentService_ConnectClient, cmd *agentv1.Command) {
 	slog.Info("received command", "command_id", cmd.CommandId, "type", fmt.Sprintf("%T", cmd.Payload))
-	result := dispatch(cmd)
+	result := a.dispatcher.Dispatch(cmd)
 	_ = stream.Send(&agentv1.AgentMessage{
 		Payload: &agentv1.AgentMessage_CommandResult{CommandResult: result},
 	})

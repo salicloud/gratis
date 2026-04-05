@@ -115,3 +115,12 @@ func reloadNginx() error {
 	}
 	return nil
 }
+
+// RestartService restarts a named system service via systemctl.
+func RestartService(name string) error {
+	out, err := exec.Command("systemctl", "restart", name).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("restart %s: %w: %s", name, err, out)
+	}
+	return nil
+}
