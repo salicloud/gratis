@@ -1,0 +1,44 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "gratis.fullname" . }}
+  labels:
+    {{- include "gratis.labels" . | nindent 4 }}
+  annotations:
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer }}
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "35"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/limit-rps: "50"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host }}
+      secretName: {{ .Values.ingress.tlsSecret }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          # API routes go directly to the API service
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "gratis.fullname" . }}-api
+                port:
+                  name: http
+          - path: /healthz
+            pathType: Exact
+            backend:
+              service:
+                name: {{ include "gratis.fullname" . }}-api
+                port:
+                  name: http
+          # Everything else goes to the Next.js frontend
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "gratis.fullname" . }}-web
+                port:
+                  name: http

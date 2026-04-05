@@ -1,0 +1,15 @@
+apiVersion: v2
+name: gratis
+description: Gratis hosting control panel — API and web frontend
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - hosting
+  - control-panel
+home: https://github.com/salicloud/gratis
+sources:
+  - https://github.com/salicloud/gratis
+maintainers:
+  - name: salicloud
+    url: https://sali.cloud

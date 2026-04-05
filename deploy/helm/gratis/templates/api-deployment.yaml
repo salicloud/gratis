@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gratis.fullname" . }}-api
+  labels:
+    {{- include "gratis.labels" . | nindent 4 }}
+    {{- include "gratis.api.selectorLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount.api }}
+  selector:
+    matchLabels:
+      {{- include "gratis.api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "gratis.labels" . | nindent 8 }}
+        {{- include "gratis.api.selectorLabels" . | nindent 8 }}
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: api
+          image: "{{ .Values.image.api.repository }}:{{ .Values.image.api.tag }}"
+          imagePullPolicy: {{ .Values.image.api.pullPolicy }}
+          args:
+            - --grpc=:9090
+            - --http=:8080
+          env:
+            - name: GRATIS_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "gratis.fullname" . }}
+                  key: db-url
+            - name: GRATIS_ADMIN_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "gratis.fullname" . }}
+                  key: admin-key
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: grpc
+              containerPort: 9090
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            failureThreshold: 2
+          resources:
+            {{- toYaml .Values.resources.api | nindent 12 }}

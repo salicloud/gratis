@@ -1,0 +1,46 @@
+# Default values for gratis.
+# Secrets (secrets.dbURL, secrets.adminKey) must be supplied at deploy time —
+# never commit them. Pass via --set or a gitignored values file.
+
+image:
+  api:
+    repository: ghcr.io/salicloud/gratis-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  web:
+    repository: ghcr.io/salicloud/gratis-web
+    tag: latest
+    pullPolicy: IfNotPresent
+
+replicaCount:
+  api: 2
+  web: 2
+
+ingress:
+  host: panel.sali.cloud      # override in your values file
+  clusterIssuer: letsencrypt-prod
+  tlsSecret: gratis-tls
+
+grpc:
+  port: 9090
+
+resources:
+  api:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  web:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+# Supply these at deploy time, never commit values
+secrets:
+  dbURL: ""
+  adminKey: ""

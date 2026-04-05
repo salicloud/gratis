@@ -1,6 +1,10 @@
 # Deployment Runbook
 
-This covers deploying the Gratis control plane (API + frontend + PostgreSQL) to a single server and connecting managed servers via the agent.
+Two deployment paths are documented here:
+- **DOKS (Kubernetes)** — recommended for production, HA, rolling deploys
+- **Single server (Docker Compose)** — simpler, good for staging or getting started fast
+
+Agents connect to the control plane the same way regardless of which path you use.
 
 ---
 
@@ -221,6 +225,157 @@ docker compose -f /opt/gratis/deploy/docker-compose.yml logs -f api
 ```bash
 docker compose -f /opt/gratis/deploy/docker-compose.yml exec postgres \
   pg_dump -U gratis gratis | gzip > gratis-$(date +%Y%m%d).sql.gz
+```
+
+---
+
+## DOKS deployment (Kubernetes)
+
+Images are built automatically by GitHub Actions on every push to `main` and pushed to `ghcr.io/salicloud/gratis-api` and `ghcr.io/salicloud/gratis-web`.
+
+### Prerequisites
+
+```bash
+# Install tools if not already present
+brew install helm kubectl doctl   # or apt/choco equivalents
+
+# Authenticate
+doctl auth init
+```
+
+### 1. Create the cluster
+
+```bash
+doctl kubernetes cluster create gratis \
+  --region nyc3 \
+  --node-pool "name=default;size=s-1vcpu-2gb;count=2;auto-scale=true;min-nodes=2;max-nodes=4" \
+  --wait
+
+doctl kubernetes cluster kubeconfig save gratis
+kubectl get nodes  # verify
+```
+
+### 2. Create DO Managed Postgres
+
+```bash
+doctl databases create gratis-db \
+  --engine pg \
+  --version 16 \
+  --size db-s-1vcpu-1gb \
+  --region nyc3 \
+  --num-nodes 1
+
+# Get the connection string
+doctl databases connection gratis-db --format URI
+```
+
+Save the URI — you'll need it as `secrets.dbURL` below.
+
+### 3. Install cert-manager
+
+```bash
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+
+helm install cert-manager jetstack/cert-manager \
+  --namespace cert-manager --create-namespace \
+  --set crds.enabled=true
+
+# Create Let's Encrypt ClusterIssuer
+kubectl apply -f - <<EOF
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: you@sali.cloud
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: nginx
+EOF
+```
+
+### 4. Install nginx-ingress with gRPC TCP support
+
+The gRPC port (9090) is exposed through the ingress load balancer via nginx's TCP services feature — no second load balancer needed.
+
+```bash
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+
+helm install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx --create-namespace \
+  --set tcp.9090="default/gratis-gratis-api:9090"
+```
+
+Get the load balancer IP after it provisions (takes ~60 seconds):
+
+```bash
+kubectl get svc -n ingress-nginx ingress-nginx-controller \
+  --output jsonpath='{.status.loadBalancer.ingress[0].ip}'
+```
+
+Point your DNS at this IP:
+```
+panel.sali.cloud   A   <load-balancer-ip>
+```
+
+### 5. Create your production values file
+
+```bash
+cat > deploy/helm/values.prod.yaml <<EOF
+ingress:
+  host: panel.sali.cloud
+
+secrets:
+  dbURL: "postgresql://..."   # from step 2
+  adminKey: "$(openssl rand -hex 32)"
+EOF
+# This file is gitignored — keep it safe
+```
+
+### 6. Deploy Gratis
+
+```bash
+helm install gratis deploy/helm/gratis \
+  --namespace default \
+  -f deploy/helm/values.prod.yaml \
+  --wait
+```
+
+Check rollout:
+```bash
+kubectl get pods
+kubectl logs -l app.kubernetes.io/name=gratis-api
+```
+
+### Updating
+
+Every push to `main` builds new images tagged with the git SHA. To deploy a new version:
+
+```bash
+# Get the SHA of the commit you want to deploy
+SHA=$(git rev-parse --short HEAD)
+
+helm upgrade gratis deploy/helm/gratis \
+  -f deploy/helm/values.prod.yaml \
+  --set image.api.tag=$SHA \
+  --set image.web.tag=$SHA \
+  --wait
+```
+
+Rolling update — zero downtime.
+
+### Viewing logs (DOKS)
+
+```bash
+kubectl logs -l app.kubernetes.io/name=gratis-api -f
+kubectl logs -l app.kubernetes.io/name=gratis-web -f
 ```
 
 ---
