@@ -29,6 +29,9 @@ func NewManager(socketPath string) (*Manager, error) {
 
 func (m *Manager) Close() { _ = m.db.Close() }
 
+// DB returns the underlying sql.DB for use by other packages that share the connection.
+func (m *Manager) DB() *sql.DB { return m.db }
+
 // CreateDatabase creates a database, a user, and grants the user full access.
 func (m *Manager) CreateDatabase(dbName, user, password string) error {
 	if !validIdent.MatchString(dbName) {

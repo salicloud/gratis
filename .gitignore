@@ -20,6 +20,9 @@ build/
 .env.local
 .env.*.local
 
+# Secrets
+deploy/.env
+
 # Editor
 .vscode/
 .idea/

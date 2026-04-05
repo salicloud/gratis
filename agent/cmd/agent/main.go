@@ -10,6 +10,7 @@ import (
 
 	"github.com/salicloud/gratis/agent/internal/database"
 	"github.com/salicloud/gratis/agent/internal/dns"
+	"github.com/salicloud/gratis/agent/internal/email"
 	"github.com/salicloud/gratis/agent/internal/rpc"
 )
 
@@ -60,7 +61,19 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	dispatcher := rpc.NewDispatcher(dbManager, dnsClient)
+	// Email manager — shares the MariaDB connection pool
+	var emailMgr *email.Manager
+	if dbManager != nil {
+		emailMgr = email.NewManager(dbManager.DB())
+		if err := emailMgr.SetupSchema(); err != nil {
+			slog.Warn("email schema setup failed", "err", err)
+			emailMgr = nil
+		} else {
+			slog.Info("email manager ready")
+		}
+	}
+
+	dispatcher := rpc.NewDispatcher(dbManager, dnsClient, emailMgr)
 	agent := rpc.NewAgent(*apiAddr, *token, dispatcher)
 
 	if err := agent.Run(ctx); err != nil {

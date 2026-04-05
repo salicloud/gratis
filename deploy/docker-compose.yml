@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gratis
+      POSTGRES_USER: gratis
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gratis"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      GRATIS_DB_URL: postgres://gratis:${POSTGRES_PASSWORD}@postgres/gratis
+      GRATIS_ADMIN_KEY: ${GRATIS_ADMIN_KEY:?GRATIS_ADMIN_KEY is required}
+    ports:
+      - "${GRPC_PORT:-9090}:9090"   # agents connect here — expose to internet
+      - "127.0.0.1:8080:8080"       # HTTP API — keep localhost-only, proxy via nginx
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      GRATIS_API_URL: http://api:8080
+    ports:
+      - "127.0.0.1:3000:3000"       # frontend — keep localhost-only, proxy via nginx
+
+volumes:
+  postgres_data:

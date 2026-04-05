@@ -101,8 +101,12 @@ message Command {
     DeleteVhostCmd      delete_vhost      = 21;
     CreateDatabaseCmd   create_database   = 30;
     DeleteDatabaseCmd   delete_database   = 31;
-    CreateEmailCmd      create_email      = 40;
-    DeleteEmailCmd      delete_email      = 41;
+    CreateEmailCmd        create_email         = 40;
+    DeleteEmailCmd        delete_email         = 41;
+    CreateEmailDomainCmd  create_email_domain  = 42;
+    DeleteEmailDomainCmd  delete_email_domain  = 43;
+    CreateEmailAliasCmd   create_email_alias   = 44;
+    DeleteEmailAliasCmd   delete_email_alias   = 45;
     CreateDNSZoneCmd    create_dns_zone   = 50;
     DeleteDNSZoneCmd    delete_dns_zone   = 51;
     UpsertDNSRecordCmd  upsert_dns_record = 52;
@@ -153,13 +157,33 @@ message DeleteDatabaseCmd {
 
 // Email
 message CreateEmailCmd {
-  string address  = 1; // full address, e.g. user@example.com
-  string password = 2;
+  string address     = 1; // full address, e.g. user@example.com
+  string password    = 2;
   uint64 quota_bytes = 3;
 }
 
 message DeleteEmailCmd {
-  string address = 1;
+  string address    = 1;
+  bool   purge_mail = 2; // remove maildir from disk
+}
+
+message CreateEmailDomainCmd {
+  string domain     = 1;
+  bool   setup_dkim = 2; // generate DKIM key and configure OpenDKIM
+}
+
+message DeleteEmailDomainCmd {
+  string domain     = 1;
+  bool   purge_mail = 2; // remove all maildirs for this domain
+}
+
+message CreateEmailAliasCmd {
+  string source      = 1; // source@domain.com
+  string destination = 2; // dest@otherdomain.com
+}
+
+message DeleteEmailAliasCmd {
+  string source = 1;
 }
 
 // DNS

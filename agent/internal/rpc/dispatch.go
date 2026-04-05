@@ -7,19 +7,21 @@ import (
 	agentv1 "github.com/salicloud/gratis/gen/agent/v1"
 	"github.com/salicloud/gratis/agent/internal/database"
 	"github.com/salicloud/gratis/agent/internal/dns"
+	"github.com/salicloud/gratis/agent/internal/email"
 	"github.com/salicloud/gratis/agent/internal/system"
 	"github.com/salicloud/gratis/agent/internal/webserver"
 )
 
 // Dispatcher routes commands to the appropriate handler modules.
-// Modules that require external services (DB, DNS) are nil when not configured.
+// Modules that require external services (DB, DNS, email) are nil when not configured.
 type Dispatcher struct {
-	db  *database.Manager
-	dns *dns.Client
+	db    *database.Manager
+	dns   *dns.Client
+	email *email.Manager
 }
 
-func NewDispatcher(db *database.Manager, dnsClient *dns.Client) *Dispatcher {
-	return &Dispatcher{db: db, dns: dnsClient}
+func NewDispatcher(db *database.Manager, dnsClient *dns.Client, emailMgr *email.Manager) *Dispatcher {
+	return &Dispatcher{db: db, dns: dnsClient, email: emailMgr}
 }
 
 func (d *Dispatcher) Dispatch(cmd *agentv1.Command) *agentv1.CommandResult {
@@ -53,6 +55,20 @@ func (d *Dispatcher) Dispatch(cmd *agentv1.Command) *agentv1.CommandResult {
 		err = d.handleUpsertDNSRecord(p.UpsertDnsRecord)
 	case *agentv1.Command_DeleteDnsRecord:
 		err = d.handleDeleteDNSRecord(p.DeleteDnsRecord)
+
+	// Email
+	case *agentv1.Command_CreateEmail:
+		err = d.handleCreateEmail(p.CreateEmail)
+	case *agentv1.Command_DeleteEmail:
+		err = d.handleDeleteEmail(p.DeleteEmail)
+	case *agentv1.Command_CreateEmailDomain:
+		err = d.handleCreateEmailDomain(p.CreateEmailDomain)
+	case *agentv1.Command_DeleteEmailDomain:
+		err = d.handleDeleteEmailDomain(p.DeleteEmailDomain)
+	case *agentv1.Command_CreateEmailAlias:
+		err = d.handleCreateEmailAlias(p.CreateEmailAlias)
+	case *agentv1.Command_DeleteEmailAlias:
+		err = d.handleDeleteEmailAlias(p.DeleteEmailAlias)
 
 	// Service management
 	case *agentv1.Command_RestartService:
@@ -148,6 +164,63 @@ func (d *Dispatcher) handleDeleteDNSRecord(cmd *agentv1.DeleteDNSRecordCmd) erro
 		return fmt.Errorf("DNS client not configured on this server")
 	}
 	return d.dns.DeleteRecord(cmd.Zone, cmd.Name, cmd.Type)
+}
+
+// ─── Email ───────────────────────────────────────────────────────────────────
+
+func (d *Dispatcher) handleCreateEmail(cmd *agentv1.CreateEmailCmd) error {
+	if d.email == nil {
+		return fmt.Errorf("email manager not configured on this server")
+	}
+	return d.email.CreateAccount(cmd.Address, cmd.Password, cmd.QuotaBytes)
+}
+
+func (d *Dispatcher) handleDeleteEmail(cmd *agentv1.DeleteEmailCmd) error {
+	if d.email == nil {
+		return fmt.Errorf("email manager not configured on this server")
+	}
+	return d.email.DeleteAccount(cmd.Address, cmd.PurgeMail)
+}
+
+func (d *Dispatcher) handleCreateEmailDomain(cmd *agentv1.CreateEmailDomainCmd) error {
+	if d.email == nil {
+		return fmt.Errorf("email manager not configured on this server")
+	}
+	if err := d.email.AddDomain(cmd.Domain); err != nil {
+		return err
+	}
+	if cmd.SetupDkim {
+		// DKIM key is generated but the caller is responsible for publishing
+		// the returned TXT record via the DNS module.
+		if _, err := email.SetupDKIM(cmd.Domain); err != nil {
+			return fmt.Errorf("dkim setup: %w", err)
+		}
+	}
+	return nil
+}
+
+func (d *Dispatcher) handleDeleteEmailDomain(cmd *agentv1.DeleteEmailDomainCmd) error {
+	if d.email == nil {
+		return fmt.Errorf("email manager not configured on this server")
+	}
+	if err := email.RemoveDKIM(cmd.Domain); err != nil {
+		slog.Warn("failed to remove DKIM config", "domain", cmd.Domain, "err", err)
+	}
+	return d.email.RemoveDomain(cmd.Domain, cmd.PurgeMail)
+}
+
+func (d *Dispatcher) handleCreateEmailAlias(cmd *agentv1.CreateEmailAliasCmd) error {
+	if d.email == nil {
+		return fmt.Errorf("email manager not configured on this server")
+	}
+	return d.email.CreateAlias(cmd.Source, cmd.Destination)
+}
+
+func (d *Dispatcher) handleDeleteEmailAlias(cmd *agentv1.DeleteEmailAliasCmd) error {
+	if d.email == nil {
+		return fmt.Errorf("email manager not configured on this server")
+	}
+	return d.email.DeleteAlias(cmd.Source)
 }
 
 // ─── Service management ──────────────────────────────────────────────────────

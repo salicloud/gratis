@@ -1,0 +1,24 @@
+[Unit]
+Description=Gratis server agent
+Documentation=https://github.com/salicloud/gratis
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+EnvironmentFile=/etc/gratis/agent.env
+ExecStart=/usr/local/bin/gratis-agent \
+  --api=${GRATIS_API_ADDR} \
+  --token=${GRATIS_TOKEN} \
+  --db-socket=${GRATIS_DB_SOCKET:-/var/run/mysqld/mysqld.sock} \
+  --pdns-url=${GRATIS_PDNS_URL:-} \
+  --pdns-key=${GRATIS_PDNS_KEY:-}
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gratis-agent
+
+[Install]
+WantedBy=multi-user.target

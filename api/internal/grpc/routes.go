@@ -12,6 +12,7 @@ func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
+	mux.HandleFunc("POST /api/v1/admin/tokens", s.handleCreateToken)
 	mux.HandleFunc("GET /api/v1/servers", s.handleListServers)
 	mux.HandleFunc("GET /api/v1/servers/{server_id}", s.handleGetServer)
 	mux.HandleFunc("POST /api/v1/servers/{server_id}/vhosts", s.handleCreateVhost)
@@ -23,6 +24,26 @@ func (s *Server) routes() http.Handler {
 func (s *Server) handleHealthz(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("ok"))
+}
+
+// handleCreateToken creates a provisioning token for a new server.
+// Protected by the GRATIS_ADMIN_KEY header.
+func (s *Server) handleCreateToken(w http.ResponseWriter, r *http.Request) {
+	if s.adminKey == "" || r.Header.Get("X-Admin-Key") != s.adminKey {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if s.store == nil {
+		http.Error(w, "store not configured", http.StatusServiceUnavailable)
+		return
+	}
+	token, err := s.store.CreateToken(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]string{"token": token})
 }
 
 func (s *Server) handleListServers(w http.ResponseWriter, r *http.Request) {

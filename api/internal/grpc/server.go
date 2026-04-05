@@ -12,9 +12,9 @@ import (
 
 	"github.com/google/uuid"
 	agentv1 "github.com/salicloud/gratis/gen/agent/v1"
+	"github.com/salicloud/gratis/api/internal/store"
 	googlegrpc "google.golang.org/grpc"
 )
-
 
 const commandTimeout = 30 * time.Second
 
@@ -24,10 +24,12 @@ type Server struct {
 
 	grpcAddr string
 	httpAddr string
+	adminKey string
+	store    *store.Store
 
-	mu       sync.RWMutex
-	agents   map[string]*connectedAgent   // server_id → agent
-	pending  map[string]chan *agentv1.CommandResult // command_id → result chan
+	mu      sync.RWMutex
+	agents  map[string]*connectedAgent
+	pending map[string]chan *agentv1.CommandResult
 }
 
 type connectedAgent struct {
@@ -39,10 +41,12 @@ type connectedAgent struct {
 	lastSeen    time.Time
 }
 
-func NewServer(grpcAddr, httpAddr string) *Server {
+func NewServer(grpcAddr, httpAddr, adminKey string, st *store.Store) *Server {
 	return &Server{
 		grpcAddr: grpcAddr,
 		httpAddr: httpAddr,
+		adminKey: adminKey,
+		store:    st,
 		agents:   make(map[string]*connectedAgent),
 		pending:  make(map[string]chan *agentv1.CommandResult),
 	}
@@ -87,9 +91,8 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 }
 
-// Connect implements AgentServiceServer — the main agent session handler.
+// Connect implements AgentServiceServer.
 func (s *Server) Connect(stream agentv1.AgentService_ConnectServer) error {
-	// First message must be RegisterRequest
 	msg, err := stream.Recv()
 	if err != nil {
 		return err
@@ -100,7 +103,7 @@ func (s *Server) Connect(stream agentv1.AgentService_ConnectServer) error {
 		return fmt.Errorf("expected RegisterRequest as first message")
 	}
 
-	serverID, err := s.authenticate(reg.Register)
+	serverID, err := s.authenticate(stream.Context(), reg.Register)
 	if err != nil {
 		_ = stream.Send(&agentv1.ServerMessage{
 			Payload: &agentv1.ServerMessage_RegisterResponse{
@@ -212,7 +215,6 @@ func (s *Server) handleAgentMessage(agent *connectedAgent, msg *agentv1.AgentMes
 }
 
 // SendCommand dispatches a command to the named server and waits for the result.
-// The caller is responsible for setting cmd.Payload before calling.
 func (s *Server) SendCommand(ctx context.Context, serverID string, cmd *agentv1.Command) (*agentv1.CommandResult, error) {
 	s.mu.RLock()
 	agent, ok := s.agents[serverID]
@@ -246,13 +248,22 @@ func (s *Server) SendCommand(ctx context.Context, serverID string, cmd *agentv1.
 	}
 }
 
-func (s *Server) authenticate(req *agentv1.RegisterRequest) (serverID string, err error) {
-	// TODO: validate token against database, return assigned server UUID
+func (s *Server) authenticate(ctx context.Context, req *agentv1.RegisterRequest) (serverID string, err error) {
 	if req.Token == "" {
 		return "", fmt.Errorf("missing token")
 	}
-	// Stub: accept any non-empty token, return hostname as ID for now
-	return "server-" + req.Hostname, nil
+	if s.store == nil {
+		// No store configured — accept any non-empty token (dev mode)
+		return "server-" + req.Hostname, nil
+	}
+	serverID, err = s.store.ValidateToken(ctx, req.Token)
+	if err != nil {
+		return "", fmt.Errorf("authentication failed: %w", err)
+	}
+	if err := s.store.UpsertServer(ctx, serverID, req.Hostname); err != nil {
+		slog.Warn("failed to upsert server record", "err", err)
+	}
+	return serverID, nil
 }
 
 func (s *Server) registerAgent(agent *connectedAgent) {

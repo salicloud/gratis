@@ -762,6 +762,10 @@ type Command struct {
 	//	*Command_DeleteDatabase
 	//	*Command_CreateEmail
 	//	*Command_DeleteEmail
+	//	*Command_CreateEmailDomain
+	//	*Command_DeleteEmailDomain
+	//	*Command_CreateEmailAlias
+	//	*Command_DeleteEmailAlias
 	//	*Command_CreateDnsZone
 	//	*Command_DeleteDnsZone
 	//	*Command_UpsertDnsRecord
@@ -889,6 +893,42 @@ func (x *Command) GetDeleteEmail() *DeleteEmailCmd {
 	return nil
 }
 
+func (x *Command) GetCreateEmailDomain() *CreateEmailDomainCmd {
+	if x != nil {
+		if x, ok := x.Payload.(*Command_CreateEmailDomain); ok {
+			return x.CreateEmailDomain
+		}
+	}
+	return nil
+}
+
+func (x *Command) GetDeleteEmailDomain() *DeleteEmailDomainCmd {
+	if x != nil {
+		if x, ok := x.Payload.(*Command_DeleteEmailDomain); ok {
+			return x.DeleteEmailDomain
+		}
+	}
+	return nil
+}
+
+func (x *Command) GetCreateEmailAlias() *CreateEmailAliasCmd {
+	if x != nil {
+		if x, ok := x.Payload.(*Command_CreateEmailAlias); ok {
+			return x.CreateEmailAlias
+		}
+	}
+	return nil
+}
+
+func (x *Command) GetDeleteEmailAlias() *DeleteEmailAliasCmd {
+	if x != nil {
+		if x, ok := x.Payload.(*Command_DeleteEmailAlias); ok {
+			return x.DeleteEmailAlias
+		}
+	}
+	return nil
+}
+
 func (x *Command) GetCreateDnsZone() *CreateDNSZoneCmd {
 	if x != nil {
 		if x, ok := x.Payload.(*Command_CreateDnsZone); ok {
@@ -979,6 +1019,22 @@ type Command_DeleteEmail struct {
 	DeleteEmail *DeleteEmailCmd `protobuf:"bytes,41,opt,name=delete_email,json=deleteEmail,proto3,oneof"`
 }
 
+type Command_CreateEmailDomain struct {
+	CreateEmailDomain *CreateEmailDomainCmd `protobuf:"bytes,42,opt,name=create_email_domain,json=createEmailDomain,proto3,oneof"`
+}
+
+type Command_DeleteEmailDomain struct {
+	DeleteEmailDomain *DeleteEmailDomainCmd `protobuf:"bytes,43,opt,name=delete_email_domain,json=deleteEmailDomain,proto3,oneof"`
+}
+
+type Command_CreateEmailAlias struct {
+	CreateEmailAlias *CreateEmailAliasCmd `protobuf:"bytes,44,opt,name=create_email_alias,json=createEmailAlias,proto3,oneof"`
+}
+
+type Command_DeleteEmailAlias struct {
+	DeleteEmailAlias *DeleteEmailAliasCmd `protobuf:"bytes,45,opt,name=delete_email_alias,json=deleteEmailAlias,proto3,oneof"`
+}
+
 type Command_CreateDnsZone struct {
 	CreateDnsZone *CreateDNSZoneCmd `protobuf:"bytes,50,opt,name=create_dns_zone,json=createDnsZone,proto3,oneof"`
 }
@@ -1018,6 +1074,14 @@ func (*Command_DeleteDatabase) isCommand_Payload() {}
 func (*Command_CreateEmail) isCommand_Payload() {}
 
 func (*Command_DeleteEmail) isCommand_Payload() {}
+
+func (*Command_CreateEmailDomain) isCommand_Payload() {}
+
+func (*Command_DeleteEmailDomain) isCommand_Payload() {}
+
+func (*Command_CreateEmailAlias) isCommand_Payload() {}
+
+func (*Command_DeleteEmailAlias) isCommand_Payload() {}
 
 func (*Command_CreateDnsZone) isCommand_Payload() {}
 
@@ -1458,6 +1522,7 @@ func (x *CreateEmailCmd) GetQuotaBytes() uint64 {
 type DeleteEmailCmd struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	PurgeMail     bool                   `protobuf:"varint,2,opt,name=purge_mail,json=purgeMail,proto3" json:"purge_mail,omitempty"` // remove maildir from disk
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1499,6 +1564,213 @@ func (x *DeleteEmailCmd) GetAddress() string {
 	return ""
 }
 
+func (x *DeleteEmailCmd) GetPurgeMail() bool {
+	if x != nil {
+		return x.PurgeMail
+	}
+	return false
+}
+
+type CreateEmailDomainCmd struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Domain        string                 `protobuf:"bytes,1,opt,name=domain,proto3" json:"domain,omitempty"`
+	SetupDkim     bool                   `protobuf:"varint,2,opt,name=setup_dkim,json=setupDkim,proto3" json:"setup_dkim,omitempty"` // generate DKIM key and configure OpenDKIM
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateEmailDomainCmd) Reset() {
+	*x = CreateEmailDomainCmd{}
+	mi := &file_agent_v1_agent_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateEmailDomainCmd) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateEmailDomainCmd) ProtoMessage() {}
+
+func (x *CreateEmailDomainCmd) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_v1_agent_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateEmailDomainCmd.ProtoReflect.Descriptor instead.
+func (*CreateEmailDomainCmd) Descriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *CreateEmailDomainCmd) GetDomain() string {
+	if x != nil {
+		return x.Domain
+	}
+	return ""
+}
+
+func (x *CreateEmailDomainCmd) GetSetupDkim() bool {
+	if x != nil {
+		return x.SetupDkim
+	}
+	return false
+}
+
+type DeleteEmailDomainCmd struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Domain        string                 `protobuf:"bytes,1,opt,name=domain,proto3" json:"domain,omitempty"`
+	PurgeMail     bool                   `protobuf:"varint,2,opt,name=purge_mail,json=purgeMail,proto3" json:"purge_mail,omitempty"` // remove all maildirs for this domain
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteEmailDomainCmd) Reset() {
+	*x = DeleteEmailDomainCmd{}
+	mi := &file_agent_v1_agent_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteEmailDomainCmd) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteEmailDomainCmd) ProtoMessage() {}
+
+func (x *DeleteEmailDomainCmd) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_v1_agent_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteEmailDomainCmd.ProtoReflect.Descriptor instead.
+func (*DeleteEmailDomainCmd) Descriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *DeleteEmailDomainCmd) GetDomain() string {
+	if x != nil {
+		return x.Domain
+	}
+	return ""
+}
+
+func (x *DeleteEmailDomainCmd) GetPurgeMail() bool {
+	if x != nil {
+		return x.PurgeMail
+	}
+	return false
+}
+
+type CreateEmailAliasCmd struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Source        string                 `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`           // source@domain.com
+	Destination   string                 `protobuf:"bytes,2,opt,name=destination,proto3" json:"destination,omitempty"` // dest@otherdomain.com
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateEmailAliasCmd) Reset() {
+	*x = CreateEmailAliasCmd{}
+	mi := &file_agent_v1_agent_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateEmailAliasCmd) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateEmailAliasCmd) ProtoMessage() {}
+
+func (x *CreateEmailAliasCmd) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_v1_agent_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateEmailAliasCmd.ProtoReflect.Descriptor instead.
+func (*CreateEmailAliasCmd) Descriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *CreateEmailAliasCmd) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *CreateEmailAliasCmd) GetDestination() string {
+	if x != nil {
+		return x.Destination
+	}
+	return ""
+}
+
+type DeleteEmailAliasCmd struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Source        string                 `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteEmailAliasCmd) Reset() {
+	*x = DeleteEmailAliasCmd{}
+	mi := &file_agent_v1_agent_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteEmailAliasCmd) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteEmailAliasCmd) ProtoMessage() {}
+
+func (x *DeleteEmailAliasCmd) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_v1_agent_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteEmailAliasCmd.ProtoReflect.Descriptor instead.
+func (*DeleteEmailAliasCmd) Descriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *DeleteEmailAliasCmd) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
 // DNS
 type CreateDNSZoneCmd struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1510,7 +1782,7 @@ type CreateDNSZoneCmd struct {
 
 func (x *CreateDNSZoneCmd) Reset() {
 	*x = CreateDNSZoneCmd{}
-	mi := &file_agent_v1_agent_proto_msgTypes[18]
+	mi := &file_agent_v1_agent_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1522,7 +1794,7 @@ func (x *CreateDNSZoneCmd) String() string {
 func (*CreateDNSZoneCmd) ProtoMessage() {}
 
 func (x *CreateDNSZoneCmd) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[18]
+	mi := &file_agent_v1_agent_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1535,7 +1807,7 @@ func (x *CreateDNSZoneCmd) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateDNSZoneCmd.ProtoReflect.Descriptor instead.
 func (*CreateDNSZoneCmd) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{18}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *CreateDNSZoneCmd) GetZone() string {
@@ -1561,7 +1833,7 @@ type DeleteDNSZoneCmd struct {
 
 func (x *DeleteDNSZoneCmd) Reset() {
 	*x = DeleteDNSZoneCmd{}
-	mi := &file_agent_v1_agent_proto_msgTypes[19]
+	mi := &file_agent_v1_agent_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1573,7 +1845,7 @@ func (x *DeleteDNSZoneCmd) String() string {
 func (*DeleteDNSZoneCmd) ProtoMessage() {}
 
 func (x *DeleteDNSZoneCmd) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[19]
+	mi := &file_agent_v1_agent_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1586,7 +1858,7 @@ func (x *DeleteDNSZoneCmd) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteDNSZoneCmd.ProtoReflect.Descriptor instead.
 func (*DeleteDNSZoneCmd) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{19}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *DeleteDNSZoneCmd) GetZone() string {
@@ -1606,7 +1878,7 @@ type UpsertDNSRecordCmd struct {
 
 func (x *UpsertDNSRecordCmd) Reset() {
 	*x = UpsertDNSRecordCmd{}
-	mi := &file_agent_v1_agent_proto_msgTypes[20]
+	mi := &file_agent_v1_agent_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1618,7 +1890,7 @@ func (x *UpsertDNSRecordCmd) String() string {
 func (*UpsertDNSRecordCmd) ProtoMessage() {}
 
 func (x *UpsertDNSRecordCmd) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[20]
+	mi := &file_agent_v1_agent_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1631,7 +1903,7 @@ func (x *UpsertDNSRecordCmd) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpsertDNSRecordCmd.ProtoReflect.Descriptor instead.
 func (*UpsertDNSRecordCmd) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{20}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *UpsertDNSRecordCmd) GetZone() string {
@@ -1659,7 +1931,7 @@ type DeleteDNSRecordCmd struct {
 
 func (x *DeleteDNSRecordCmd) Reset() {
 	*x = DeleteDNSRecordCmd{}
-	mi := &file_agent_v1_agent_proto_msgTypes[21]
+	mi := &file_agent_v1_agent_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1671,7 +1943,7 @@ func (x *DeleteDNSRecordCmd) String() string {
 func (*DeleteDNSRecordCmd) ProtoMessage() {}
 
 func (x *DeleteDNSRecordCmd) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[21]
+	mi := &file_agent_v1_agent_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1684,7 +1956,7 @@ func (x *DeleteDNSRecordCmd) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteDNSRecordCmd.ProtoReflect.Descriptor instead.
 func (*DeleteDNSRecordCmd) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{21}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *DeleteDNSRecordCmd) GetZone() string {
@@ -1721,7 +1993,7 @@ type DNSRecord struct {
 
 func (x *DNSRecord) Reset() {
 	*x = DNSRecord{}
-	mi := &file_agent_v1_agent_proto_msgTypes[22]
+	mi := &file_agent_v1_agent_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1733,7 +2005,7 @@ func (x *DNSRecord) String() string {
 func (*DNSRecord) ProtoMessage() {}
 
 func (x *DNSRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[22]
+	mi := &file_agent_v1_agent_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1746,7 +2018,7 @@ func (x *DNSRecord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DNSRecord.ProtoReflect.Descriptor instead.
 func (*DNSRecord) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{22}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *DNSRecord) GetName() string {
@@ -1797,7 +2069,7 @@ type IssueCertCmd struct {
 
 func (x *IssueCertCmd) Reset() {
 	*x = IssueCertCmd{}
-	mi := &file_agent_v1_agent_proto_msgTypes[23]
+	mi := &file_agent_v1_agent_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1809,7 +2081,7 @@ func (x *IssueCertCmd) String() string {
 func (*IssueCertCmd) ProtoMessage() {}
 
 func (x *IssueCertCmd) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[23]
+	mi := &file_agent_v1_agent_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1822,7 +2094,7 @@ func (x *IssueCertCmd) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssueCertCmd.ProtoReflect.Descriptor instead.
 func (*IssueCertCmd) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{23}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *IssueCertCmd) GetDomain() string {
@@ -1863,7 +2135,7 @@ type RestartServiceCmd struct {
 
 func (x *RestartServiceCmd) Reset() {
 	*x = RestartServiceCmd{}
-	mi := &file_agent_v1_agent_proto_msgTypes[24]
+	mi := &file_agent_v1_agent_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1875,7 +2147,7 @@ func (x *RestartServiceCmd) String() string {
 func (*RestartServiceCmd) ProtoMessage() {}
 
 func (x *RestartServiceCmd) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[24]
+	mi := &file_agent_v1_agent_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1888,7 +2160,7 @@ func (x *RestartServiceCmd) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestartServiceCmd.ProtoReflect.Descriptor instead.
 func (*RestartServiceCmd) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{24}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *RestartServiceCmd) GetService() string {
@@ -1951,7 +2223,8 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\x10RegisterResponse\x12\x1a\n" +
 	"\baccepted\x18\x01 \x01(\bR\baccepted\x12\x1b\n" +
 	"\tserver_id\x18\x02 \x01(\tR\bserverId\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\tR\amessage\"\xee\a\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"\xb0\n" +
+	"\n" +
 	"\aCommand\x12\x1d\n" +
 	"\n" +
 	"command_id\x18\x01 \x01(\tR\tcommandId\x12C\n" +
@@ -1963,7 +2236,11 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\x0fcreate_database\x18\x1e \x01(\v2\x1b.agent.v1.CreateDatabaseCmdH\x00R\x0ecreateDatabase\x12F\n" +
 	"\x0fdelete_database\x18\x1f \x01(\v2\x1b.agent.v1.DeleteDatabaseCmdH\x00R\x0edeleteDatabase\x12=\n" +
 	"\fcreate_email\x18( \x01(\v2\x18.agent.v1.CreateEmailCmdH\x00R\vcreateEmail\x12=\n" +
-	"\fdelete_email\x18) \x01(\v2\x18.agent.v1.DeleteEmailCmdH\x00R\vdeleteEmail\x12D\n" +
+	"\fdelete_email\x18) \x01(\v2\x18.agent.v1.DeleteEmailCmdH\x00R\vdeleteEmail\x12P\n" +
+	"\x13create_email_domain\x18* \x01(\v2\x1e.agent.v1.CreateEmailDomainCmdH\x00R\x11createEmailDomain\x12P\n" +
+	"\x13delete_email_domain\x18+ \x01(\v2\x1e.agent.v1.DeleteEmailDomainCmdH\x00R\x11deleteEmailDomain\x12M\n" +
+	"\x12create_email_alias\x18, \x01(\v2\x1d.agent.v1.CreateEmailAliasCmdH\x00R\x10createEmailAlias\x12M\n" +
+	"\x12delete_email_alias\x18- \x01(\v2\x1d.agent.v1.DeleteEmailAliasCmdH\x00R\x10deleteEmailAlias\x12D\n" +
 	"\x0fcreate_dns_zone\x182 \x01(\v2\x1a.agent.v1.CreateDNSZoneCmdH\x00R\rcreateDnsZone\x12D\n" +
 	"\x0fdelete_dns_zone\x183 \x01(\v2\x1a.agent.v1.DeleteDNSZoneCmdH\x00R\rdeleteDnsZone\x12J\n" +
 	"\x11upsert_dns_record\x184 \x01(\v2\x1c.agent.v1.UpsertDNSRecordCmdH\x00R\x0fupsertDnsRecord\x12J\n" +
@@ -2002,9 +2279,24 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x1f\n" +
 	"\vquota_bytes\x18\x03 \x01(\x04R\n" +
-	"quotaBytes\"*\n" +
+	"quotaBytes\"I\n" +
 	"\x0eDeleteEmailCmd\x12\x18\n" +
-	"\aaddress\x18\x01 \x01(\tR\aaddress\"U\n" +
+	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x1d\n" +
+	"\n" +
+	"purge_mail\x18\x02 \x01(\bR\tpurgeMail\"M\n" +
+	"\x14CreateEmailDomainCmd\x12\x16\n" +
+	"\x06domain\x18\x01 \x01(\tR\x06domain\x12\x1d\n" +
+	"\n" +
+	"setup_dkim\x18\x02 \x01(\bR\tsetupDkim\"M\n" +
+	"\x14DeleteEmailDomainCmd\x12\x16\n" +
+	"\x06domain\x18\x01 \x01(\tR\x06domain\x12\x1d\n" +
+	"\n" +
+	"purge_mail\x18\x02 \x01(\bR\tpurgeMail\"O\n" +
+	"\x13CreateEmailAliasCmd\x12\x16\n" +
+	"\x06source\x18\x01 \x01(\tR\x06source\x12 \n" +
+	"\vdestination\x18\x02 \x01(\tR\vdestination\"-\n" +
+	"\x13DeleteEmailAliasCmd\x12\x16\n" +
+	"\x06source\x18\x01 \x01(\tR\x06source\"U\n" +
 	"\x10CreateDNSZoneCmd\x12\x12\n" +
 	"\x04zone\x18\x01 \x01(\tR\x04zone\x12-\n" +
 	"\arecords\x18\x02 \x03(\v2\x13.agent.v1.DNSRecordR\arecords\"&\n" +
@@ -2052,7 +2344,7 @@ func file_agent_v1_agent_proto_rawDescGZIP() []byte {
 }
 
 var file_agent_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
+var file_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_agent_v1_agent_proto_goTypes = []any{
 	(LogLevel)(0),                 // 0: agent.v1.LogLevel
 	(*AgentMessage)(nil),          // 1: agent.v1.AgentMessage
@@ -2073,24 +2365,28 @@ var file_agent_v1_agent_proto_goTypes = []any{
 	(*DeleteDatabaseCmd)(nil),     // 16: agent.v1.DeleteDatabaseCmd
 	(*CreateEmailCmd)(nil),        // 17: agent.v1.CreateEmailCmd
 	(*DeleteEmailCmd)(nil),        // 18: agent.v1.DeleteEmailCmd
-	(*CreateDNSZoneCmd)(nil),      // 19: agent.v1.CreateDNSZoneCmd
-	(*DeleteDNSZoneCmd)(nil),      // 20: agent.v1.DeleteDNSZoneCmd
-	(*UpsertDNSRecordCmd)(nil),    // 21: agent.v1.UpsertDNSRecordCmd
-	(*DeleteDNSRecordCmd)(nil),    // 22: agent.v1.DeleteDNSRecordCmd
-	(*DNSRecord)(nil),             // 23: agent.v1.DNSRecord
-	(*IssueCertCmd)(nil),          // 24: agent.v1.IssueCertCmd
-	(*RestartServiceCmd)(nil),     // 25: agent.v1.RestartServiceCmd
-	(*timestamppb.Timestamp)(nil), // 26: google.protobuf.Timestamp
+	(*CreateEmailDomainCmd)(nil),  // 19: agent.v1.CreateEmailDomainCmd
+	(*DeleteEmailDomainCmd)(nil),  // 20: agent.v1.DeleteEmailDomainCmd
+	(*CreateEmailAliasCmd)(nil),   // 21: agent.v1.CreateEmailAliasCmd
+	(*DeleteEmailAliasCmd)(nil),   // 22: agent.v1.DeleteEmailAliasCmd
+	(*CreateDNSZoneCmd)(nil),      // 23: agent.v1.CreateDNSZoneCmd
+	(*DeleteDNSZoneCmd)(nil),      // 24: agent.v1.DeleteDNSZoneCmd
+	(*UpsertDNSRecordCmd)(nil),    // 25: agent.v1.UpsertDNSRecordCmd
+	(*DeleteDNSRecordCmd)(nil),    // 26: agent.v1.DeleteDNSRecordCmd
+	(*DNSRecord)(nil),             // 27: agent.v1.DNSRecord
+	(*IssueCertCmd)(nil),          // 28: agent.v1.IssueCertCmd
+	(*RestartServiceCmd)(nil),     // 29: agent.v1.RestartServiceCmd
+	(*timestamppb.Timestamp)(nil), // 30: google.protobuf.Timestamp
 }
 var file_agent_v1_agent_proto_depIdxs = []int32{
 	2,  // 0: agent.v1.AgentMessage.register:type_name -> agent.v1.RegisterRequest
 	3,  // 1: agent.v1.AgentMessage.heartbeat:type_name -> agent.v1.Heartbeat
 	6,  // 2: agent.v1.AgentMessage.command_result:type_name -> agent.v1.CommandResult
 	7,  // 3: agent.v1.AgentMessage.log:type_name -> agent.v1.LogEntry
-	26, // 4: agent.v1.Heartbeat.timestamp:type_name -> google.protobuf.Timestamp
+	30, // 4: agent.v1.Heartbeat.timestamp:type_name -> google.protobuf.Timestamp
 	4,  // 5: agent.v1.Heartbeat.metrics:type_name -> agent.v1.SystemMetrics
 	5,  // 6: agent.v1.Heartbeat.services:type_name -> agent.v1.ServiceStatus
-	26, // 7: agent.v1.LogEntry.timestamp:type_name -> google.protobuf.Timestamp
+	30, // 7: agent.v1.LogEntry.timestamp:type_name -> google.protobuf.Timestamp
 	0,  // 8: agent.v1.LogEntry.level:type_name -> agent.v1.LogLevel
 	9,  // 9: agent.v1.ServerMessage.register_response:type_name -> agent.v1.RegisterResponse
 	10, // 10: agent.v1.ServerMessage.command:type_name -> agent.v1.Command
@@ -2102,21 +2398,25 @@ var file_agent_v1_agent_proto_depIdxs = []int32{
 	16, // 16: agent.v1.Command.delete_database:type_name -> agent.v1.DeleteDatabaseCmd
 	17, // 17: agent.v1.Command.create_email:type_name -> agent.v1.CreateEmailCmd
 	18, // 18: agent.v1.Command.delete_email:type_name -> agent.v1.DeleteEmailCmd
-	19, // 19: agent.v1.Command.create_dns_zone:type_name -> agent.v1.CreateDNSZoneCmd
-	20, // 20: agent.v1.Command.delete_dns_zone:type_name -> agent.v1.DeleteDNSZoneCmd
-	21, // 21: agent.v1.Command.upsert_dns_record:type_name -> agent.v1.UpsertDNSRecordCmd
-	22, // 22: agent.v1.Command.delete_dns_record:type_name -> agent.v1.DeleteDNSRecordCmd
-	24, // 23: agent.v1.Command.issue_cert:type_name -> agent.v1.IssueCertCmd
-	25, // 24: agent.v1.Command.restart_service:type_name -> agent.v1.RestartServiceCmd
-	23, // 25: agent.v1.CreateDNSZoneCmd.records:type_name -> agent.v1.DNSRecord
-	23, // 26: agent.v1.UpsertDNSRecordCmd.record:type_name -> agent.v1.DNSRecord
-	1,  // 27: agent.v1.AgentService.Connect:input_type -> agent.v1.AgentMessage
-	8,  // 28: agent.v1.AgentService.Connect:output_type -> agent.v1.ServerMessage
-	28, // [28:29] is the sub-list for method output_type
-	27, // [27:28] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	19, // 19: agent.v1.Command.create_email_domain:type_name -> agent.v1.CreateEmailDomainCmd
+	20, // 20: agent.v1.Command.delete_email_domain:type_name -> agent.v1.DeleteEmailDomainCmd
+	21, // 21: agent.v1.Command.create_email_alias:type_name -> agent.v1.CreateEmailAliasCmd
+	22, // 22: agent.v1.Command.delete_email_alias:type_name -> agent.v1.DeleteEmailAliasCmd
+	23, // 23: agent.v1.Command.create_dns_zone:type_name -> agent.v1.CreateDNSZoneCmd
+	24, // 24: agent.v1.Command.delete_dns_zone:type_name -> agent.v1.DeleteDNSZoneCmd
+	25, // 25: agent.v1.Command.upsert_dns_record:type_name -> agent.v1.UpsertDNSRecordCmd
+	26, // 26: agent.v1.Command.delete_dns_record:type_name -> agent.v1.DeleteDNSRecordCmd
+	28, // 27: agent.v1.Command.issue_cert:type_name -> agent.v1.IssueCertCmd
+	29, // 28: agent.v1.Command.restart_service:type_name -> agent.v1.RestartServiceCmd
+	27, // 29: agent.v1.CreateDNSZoneCmd.records:type_name -> agent.v1.DNSRecord
+	27, // 30: agent.v1.UpsertDNSRecordCmd.record:type_name -> agent.v1.DNSRecord
+	1,  // 31: agent.v1.AgentService.Connect:input_type -> agent.v1.AgentMessage
+	8,  // 32: agent.v1.AgentService.Connect:output_type -> agent.v1.ServerMessage
+	32, // [32:33] is the sub-list for method output_type
+	31, // [31:32] is the sub-list for method input_type
+	31, // [31:31] is the sub-list for extension type_name
+	31, // [31:31] is the sub-list for extension extendee
+	0,  // [0:31] is the sub-list for field type_name
 }
 
 func init() { file_agent_v1_agent_proto_init() }
@@ -2143,6 +2443,10 @@ func file_agent_v1_agent_proto_init() {
 		(*Command_DeleteDatabase)(nil),
 		(*Command_CreateEmail)(nil),
 		(*Command_DeleteEmail)(nil),
+		(*Command_CreateEmailDomain)(nil),
+		(*Command_DeleteEmailDomain)(nil),
+		(*Command_CreateEmailAlias)(nil),
+		(*Command_DeleteEmailAlias)(nil),
 		(*Command_CreateDnsZone)(nil),
 		(*Command_DeleteDnsZone)(nil),
 		(*Command_UpsertDnsRecord)(nil),
@@ -2156,7 +2460,7 @@ func file_agent_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_agent_v1_agent_proto_rawDesc), len(file_agent_v1_agent_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   25,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
