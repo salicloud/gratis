@@ -9,6 +9,7 @@ import (
 	"time"
 
 	agentv1 "github.com/salicloud/gratis/gen/agent/v1"
+	"github.com/salicloud/gratis/agent/internal/system"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
@@ -21,8 +22,9 @@ const (
 )
 
 type Agent struct {
-	apiAddr string
-	token   string
+	apiAddr   string
+	token     string
+	lastCPU   system.CPUSample
 }
 
 func NewAgent(apiAddr, token string) *Agent {
@@ -149,25 +151,36 @@ func (a *Agent) session(ctx context.Context, stream agentv1.AgentService_Connect
 
 func (a *Agent) handleCommand(ctx context.Context, stream agentv1.AgentService_ConnectClient, cmd *agentv1.Command) {
 	slog.Info("received command", "command_id", cmd.CommandId, "type", fmt.Sprintf("%T", cmd.Payload))
-
-	// TODO: dispatch to handler modules (webserver, email, dns, etc.)
-	// For now, acknowledge with not-implemented
+	result := dispatch(cmd)
 	_ = stream.Send(&agentv1.AgentMessage{
-		Payload: &agentv1.AgentMessage_CommandResult{
-			CommandResult: &agentv1.CommandResult{
-				CommandId: cmd.CommandId,
-				Success:   false,
-				Error:     "not implemented",
-			},
-		},
+		Payload: &agentv1.AgentMessage_CommandResult{CommandResult: result},
 	})
 }
 
 func (a *Agent) buildHeartbeat() *agentv1.Heartbeat {
-	// TODO: read real metrics from /proc
+	metrics := &agentv1.SystemMetrics{}
+
+	if cur, err := system.SampleCPU(); err == nil {
+		metrics.CpuPercent = system.CPUPercent(a.lastCPU, cur)
+		a.lastCPU = cur
+	}
+	if mem, err := system.ReadMemInfo(); err == nil {
+		metrics.MemTotal = mem.Total
+		metrics.MemUsed = mem.Used
+	}
+	if disk, err := system.ReadDiskInfo("/"); err == nil {
+		metrics.DiskTotal = disk.Total
+		metrics.DiskUsed = disk.Used
+	}
+	if load, err := system.ReadLoadAvg(); err == nil {
+		metrics.Load_1 = load.Load1
+		metrics.Load_5 = load.Load5
+		metrics.Load_15 = load.Load15
+	}
+
 	return &agentv1.Heartbeat{
 		Timestamp: timestamppb.Now(),
-		Metrics:   &agentv1.SystemMetrics{},
+		Metrics:   metrics,
 		Services:  []*agentv1.ServiceStatus{},
 	}
 }
